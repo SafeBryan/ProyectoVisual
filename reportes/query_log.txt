@@ -1,0 +1,10 @@
+SQL Query: 
+    SELECT 
+        e.id_empleado, e.emple_nombre, e.emple_apellido, 
+        SUM(TIMESTAMPDIFF(MINUTE, a.hora_entrada, a.hora_salida)) / 60 AS horas_trabajadas,
+        SUM(a.minutos_atraso) AS minutos_atraso,
+        SUM(CASE WHEN a.hora_entrada IS NULL OR a.hora_salida IS NULL THEN 8 ELSE 0 END) AS horas_no_registradas
+    FROM empleados e
+    LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
+    WHERE a.fecha_asistencia BETWEEN '2024-06-03' AND '2024-06-10'
+    GROUP BY e.id_empleado
