@@ -1,6 +1,6 @@
 <?php
 require('../fpdf185/fpdf.php');
-include '../conexion.php';
+include '../modelo/conexion.php';
 
 session_start();
 
