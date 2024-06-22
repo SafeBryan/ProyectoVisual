@@ -55,65 +55,56 @@ $rol_usuario = $_SESSION['rol'];
 
         <?php endif; ?>
 
-        <button id="btnVolver">Volver</buttom>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var dialog = document.getElementById('dialog');
-                var cedulaInput = document.getElementById('cedula');
-                var aceptarBtn = document.getElementById('aceptarBtn');
-                var reporteForm = document.getElementById('reporteForm');
-                var errorInput = document.getElementById('error');
-                /*var errorDiv = document.getElementById('error');
-
-                if (errorDiv) {
-                    alert(errorDiv.innerText);
-                    window.history.back(); // Volver a la página anterior
-                }*/
-
-                if (errorInput.value) {
-                    alert(errorInput.value);
-                }
-
-                generarReporteBtn.addEventListener('click', function() {
-                    dialog.style.display = 'block';
-                });
-
-                aceptarBtn.addEventListener('click', function() {
-                    var cedula = cedulaInput.value.trim();
-                    if (cedula) {
-                        document.getElementById('cedulaInput').value = cedula;
-                        reporteForm.submit();
-                    } else {
-                        alert('Por favor, ingresa un número de cédula.');
-                    }
-                });
-                document.querySelector('.close').addEventListener('click', function() {
-                    dialog.style.display = 'none';
-                });
-                
-            });
-            
-
-            function goBackToReportes() {
-                window.location.href = "http://localhost/PruebaVisual/login.php";
-            }
-
-            document.getElementById('btnVolver').onclick = goBackToReportes;
-        </script>
-
+        <button id="btnVolver">Volver</button>
     </div>
     <div id="dialog" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Ingresar número de cédula</h2>
             <input type="text" id="cedula" placeholder="Número de cédula">
-            <button class="boton-cedula" id="aceptarBtn" disable>Aceptar</button>
-            <button class="boton-cedula" id="cancelarBtn">Cancelar</button>
+            <button class="boton-cedula" id="aceptarBtn">Aceptar</button>
         </div>
     </div>
     <footer>
         &copy; 2024 Grupo 5. Computación Visual.
     </footer>
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dialog = document.getElementById('dialog');
+            var cedulaInput = document.getElementById('cedula');
+            var aceptarBtn = document.getElementById('aceptarBtn');
+            var reporteForm = document.getElementById('reporteForm');
+            var errorInput = document.getElementById('error');
+
+            if (errorInput.value) {
+                alert(errorInput.value);
+            }
+
+            var generarReporteBtn = document.getElementById('generarReporteBtn');
+            generarReporteBtn.addEventListener('click', function() {
+                dialog.style.display = 'block';
+            });
+
+            aceptarBtn.addEventListener('click', function() {
+                var cedula = cedulaInput.value.trim();
+                if (cedula) {
+                    document.getElementById('cedulaInput').value = cedula;
+                    reporteForm.submit();
+                } else {
+                    alert('Por favor, ingresa un número de cédula.');
+                }
+            });
+
+            document.querySelector('.close').addEventListener('click', function() {
+                dialog.style.display = 'none';
+            });
+        });
+
+        function goBackToReportes() {
+            window.history.back();
+        }
+
+        document.getElementById('btnVolver').onclick = goBackToReportes;
+    </script>
 </body>
 </html>

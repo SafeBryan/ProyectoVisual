@@ -34,12 +34,13 @@
                 
 
                 <li class="red">
-                    <a href="acerca.php" class="">
-                        <img src="../public/img-inicio/info.png" class="img-inicio" alt="">
-                        <!-- <i class="fas fa-exclamation"></i> -->
-                        <span class="lbl">ACERCA DE</span>
-                    </a>
-                </li>
+    <a href="reportes.php" class="">
+        <img src="../public/img-inicio/informes.png" class="img-inicio" alt="">
+        <!-- <i class="fas fa-exclamation"></i> -->
+        <span class="lbl">INFORMES</span>
+    </a>
+</li>
+
 
 
 
