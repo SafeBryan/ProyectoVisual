@@ -2,9 +2,9 @@
 include_once "modelo/conexion.php";
 
 // Establecer la zona horaria
-date_default_timezone_set('America/Guayaquil'); // Esta es la zona horaria del server
+date_default_timezone_set('America/Guayaquil'); // Esta es la zona horaria del servidor
 
-if (isset($_POST["btnEntrada"])) {
+if (isset($_POST["btnSalida"])) {
     if (!empty($_POST["txtCedula"])) {
         $conexion = new Conexion();
         $conn = $conexion->conectar();
@@ -20,30 +20,33 @@ if (isset($_POST["btnEntrada"])) {
                 $fecha = date("Y-m-d");
                 $hora_actual = date("H:i:s");
 
-                // Determinar la jornada basándose en la hora actual con un margen de 15 minutos antes del inicio de la jornada
-                $jornada_query = $conn->query("SELECT id_jornada, inicio_jornada FROM trabajo_jornadas WHERE ('$hora_actual' BETWEEN DATE_SUB(inicio_jornada, INTERVAL 15 MINUTE) AND fin_jornada)");
+                // Determinar la jornada basándose en la hora actual con un margen de 10 minutos después del fin de la jornada
+                $jornada_query = $conn->query("SELECT id_jornada, fin_jornada FROM trabajo_jornadas WHERE ('$hora_actual' BETWEEN inicio_jornada AND DATE_ADD(fin_jornada, INTERVAL 10 MINUTE))");
 
                 if ($jornada_query && $jornada_query->num_rows > 0) {
                     $jornada = $jornada_query->fetch_object();
                     $id_jornada = $jornada->id_jornada;
-                    $inicio_jornada = $jornada->inicio_jornada;
+                    $fin_jornada = $jornada->fin_jornada;
 
                     // Verificar si ya existe un registro de entrada para este empleado en esta jornada y fecha
-                    $verificar_query = $conn->query("SELECT * FROM asistencias WHERE id_empleado = '$id_empleado' AND id_jornada = '$id_jornada' AND fecha_asistencia = '$fecha'");
+                    $verificar_query = $conn->query("SELECT * FROM asistencias WHERE id_empleado = '$id_empleado' AND id_jornada = '$id_jornada' AND fecha_asistencia = '$fecha' AND hora_salida IS NULL");
 
-                    if ($verificar_query->num_rows == 0) {
-                        // Determinar la hora de entrada a registrar
-                        $hora_entrada_registrar = $hora_actual <= $inicio_jornada ? $inicio_jornada : $hora_actual;
+                    if ($verificar_query->num_rows > 0) {
+                        // Actualizar la asistencia en la tabla asistencias, registrando la hora de salida
+                        if ($hora_actual > $fin_jornada) {
+                            $hora_salida_registro = $fin_jornada;
+                        } else {
+                            $hora_salida_registro = $hora_actual;
+                        }
 
-                        // Insertar la asistencia en la tabla asistencias
-                        $sql = $conn->query("INSERT INTO asistencias (id_empleado, id_jornada, fecha_asistencia, hora_entrada) VALUES ('$id_empleado', '$id_jornada', '$fecha', '$hora_entrada_registrar')");
+                        $sql = $conn->query("UPDATE asistencias SET hora_salida = '$hora_salida_registro' WHERE id_empleado = '$id_empleado' AND id_jornada = '$id_jornada' AND fecha_asistencia = '$fecha'");
 
                         if ($sql) {
                             echo "<script>
                                 $(document).ready(function() {
                                     new PNotify({
-                                        title: 'Entrada registrada',
-                                        text: 'Entrada registrada para el empleado ID: $id_empleado a las $hora_entrada_registrar',
+                                        title: 'Salida registrada',
+                                        text: 'Salida registrada para el empleado ID: $id_empleado a las $hora_salida_registro',
                                         type: 'success',
                                         styling: 'bootstrap3'
                                     });
@@ -53,8 +56,8 @@ if (isset($_POST["btnEntrada"])) {
                             echo "<script>
                                 $(document).ready(function() {
                                     new PNotify({
-                                        title: 'Entrada no registrada',
-                                        text: 'Entrada no registrada para el empleado ID: $id_empleado',
+                                        title: 'Salida no registrada',
+                                        text: 'Salida no registrada para el empleado ID: $id_empleado',
                                         type: 'error',
                                         styling: 'bootstrap3'
                                     });
@@ -65,8 +68,8 @@ if (isset($_POST["btnEntrada"])) {
                         echo "<script>
                             $(document).ready(function() {
                                 new PNotify({
-                                    title: 'Entrada ya registrada',
-                                    text: 'Ya se ha registrado una entrada para este empleado en esta jornada',
+                                    title: 'Salida ya registrada o entrada no encontrada',
+                                    text: 'Ya se ha registrado una salida para este empleado en esta jornada o no se encontró una entrada previa',
                                     type: 'error',
                                     styling: 'bootstrap3'
                                 });

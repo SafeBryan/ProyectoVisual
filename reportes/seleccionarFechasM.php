@@ -37,14 +37,14 @@
             <input type="hidden" id="fechaFin" name="fechaFin">
             <button type="submit">Generar Reporte</button>
         </form>
-        <button id="btnVolver">Volver</button>
-        <script>
-        function goBackToReportes() {
-            window.location.href = "http://localhost/PruebaVisual/reportes.php";
-        }
-
-        document.getElementById('btnVolver').onclick = goBackToReportes;
-        </script>
+        <form>
+</form>
+<button id="btnVolver">Volver</button>
+<script>
+    document.getElementById('btnVolver').addEventListener('click', function() {
+        window.history.back();
+    });
+</script>
     </div>
     <footer>
         &copy; 2024 Grupo 5. Computación Visual.

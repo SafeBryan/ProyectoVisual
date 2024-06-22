@@ -72,6 +72,7 @@
                         <?php
                         include_once "modelo/conexion.php";
                         include "controlador/registarAsistencia.php";
+                        include "controlador/registrarSalida.php";
                         ?>
                         <p id="fecha" style="font-size: 1.8rem;"></p>
                     </div>
@@ -80,12 +81,8 @@
                             <input type="number" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su cedula" name="txtCedula">
                             <div class="botones">
                                 <button class="btn btn-lg btn-primary w-100 fs-6 mt-2" type="submit" name="btnEntrada" style="background: #7F0E16;" value="ok">Entrada</button>
+                                <button class="btn btn-lg btn-primary w-100 fs-6 mt-2" type="submit" name="btnSalida" style="background: #7F0E16;" value="ok">Salida</button>
                             </div>
-                        </form>
-                    </div>
-                    <div class="input-group mb-3">
-                        <form action="salida.php" method="POST" class="w-100">
-                            <button type="submit" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Salida</button>
                         </form>
                     </div>
                 </div>
