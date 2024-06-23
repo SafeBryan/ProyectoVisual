@@ -29,7 +29,7 @@ require('sidebar.php');
     ?>
 
     <table class="table table-bordered table-hover col-12" id="example">
-        <thead>
+        <thead> 
             <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Empleado</th>
