@@ -1,30 +1,3 @@
-<!-- /*
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-    <link rel="stylesheet" href="../index.css">
-    <link rel="stylesheet" type="text/css" href="JQUERY/themes/icon.css">
-    <link rel="stylesheet" type="text/css" href="JQUERY/themes/black/easyui.css">
-    <link rel="stylesheet" type="text/css" href="JQUERY/easyui/themes/color.css">
-    <link rel="stylesheet" type="text/css" href="JQUERY/easyui/demo/demo.css">
-    <script type="text/javascript" src="JQUERY/jquery.min.js"></script>
-    <script type="text/javascript" src="JQUERY/jquery.easyui.min.js"></script>
-</head>
-<body>
-    <h2>Login</h2>
-    <form method="post" action="login.php">
-        <label for="usuario">Usuario:</label>
-        <input type="text" id="usuario" name="usuario" required>
-        <br>
-        <label for="contrasenia">Contraseña:</label>
-        <input type="password" id="contrasenia" name="contrasenia" required>
-        <br>
-        <button type="submit">Login</button>
-    </form>
-</body>
-</html> -->
 <?php 
 include '../modelo/conexion.php';
 session_start();
@@ -33,12 +6,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
     $usuario = $_POST['usuario'];
     $contrasenia = $_POST['contrasenia'];
 
+    // Crear conexión a la base de datos
     $conexion = new Conexion();
     $conn = $conexion->conectar();
 
+    // Escapar las entradas para evitar inyección SQL
     $usuario = mysqli_real_escape_string($conn, $usuario);
     $contrasenia = mysqli_real_escape_string($conn, $contrasenia);
 
+    // Consultar el usuario en la base de datos
     $sql = "SELECT u.usuario, u.id, u.rol, u.id_empleado, e.emple_nombre, e.emple_apellido 
             FROM usuarios u
             JOIN empleados e ON u.id_empleado = e.id_empleado
@@ -47,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
     $result = mysqli_query($conn, $sql);
 
     if (mysqli_num_rows($result) == 1) {
+        // Usuario encontrado
         $row = mysqli_fetch_assoc($result);
         $_SESSION['usuario'] = $usuario;
         $_SESSION['usuario_id'] = $row['id'];
@@ -55,12 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
         $_SESSION['nombre'] = $row['emple_nombre']; 
         $_SESSION['apellido'] = $row['emple_apellido']; 
 
-        if ($row['rol'] == 'admin') {
-            header("Location: inicio.php");
-        } else {
-            header("Location: reportes.php");
-        }
-        exit(); // Ensure no further code is executed after redirect
+        // Redirigir según el rol del usuario
+        header("Location: inicio.php");
+        exit(); // Asegurar que no se ejecute más código después de la redirección
     } else {
         echo "Usuario o contraseña incorrectos.";
     }
@@ -105,10 +79,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
                             <h2>Iniciar Sesion</h2>
                         </div>
                         <div class="input-group mb-3">
-                            <input type="text" id="usuario" name="usuario" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su usuario">
+                            <input type="text" id="usuario" name="usuario" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su usuario" required>
                         </div>
                         <div class="input-group mb-3">
-                            <input type="password" id="contrasenia" name="contrasenia" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su contraseña">
+                            <input type="password" id="contrasenia" name="contrasenia" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su contraseña" required>
                         </div>
                         <div class="input-group mb-3">
                             <button type="submit" name="enviar" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Login</button>

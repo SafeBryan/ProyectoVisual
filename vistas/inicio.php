@@ -3,37 +3,38 @@ session_start();
 
 // Asegurarse de que el usuario está autenticado
 if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.php");  
+    header("Location: login.php");
     exit();
 }
 
 // Incluir archivos necesarios
 include '../modelo/conexion.php';
-include '../controlador/eliminarAsistencia.php';
 
 // Crear conexión a la base de datos
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-// Filtrar registros de asistencia basados en la fecha actual del servidor o búsqueda
-$search = '';
-if (isset($_GET['search'])) {
-    $search = mysqli_real_escape_string($conn, $_GET['search']);
-    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
-            FROM empleados e
-            JOIN usuarios u ON e.id_empleado = u.id_empleado
-            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
-            WHERE (e.emple_nombre LIKE '%$search%' OR e.emple_apellido LIKE '%$search%' OR e.id_empleado LIKE '%$search%')
-            AND a.fecha_asistencia = CURDATE()";
-} else {
+// Consultar asistencias según el rol del usuario
+if ($_SESSION['rol'] == 'admin') {
     $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
             FROM empleados e
             JOIN usuarios u ON e.id_empleado = u.id_empleado
             LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
             WHERE a.fecha_asistencia = CURDATE()";
+} else {
+    $id_empleado = $_SESSION['id_empleado'];
+    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
+            FROM empleados e
+            JOIN usuarios u ON e.id_empleado = u.id_empleado
+            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
+            WHERE e.id_empleado = '$id_empleado' AND a.fecha_asistencia = CURDATE()";
 }
 
 $result = mysqli_query($conn, $sql);
+
+if (!$result) {
+    die("Error en la consulta: " . mysqli_error($conn));
+}
 ?>
 
 <!DOCTYPE html>
@@ -44,21 +45,30 @@ $result = mysqli_query($conn, $sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
-    <title>Dashboard | AsmrProg</title>
+    <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
+    <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
+    <title>Asistencias</title>
     <style>
         body {
             color: white;
         }
-        .table th, .table td {
+
+        .table th,
+        .table td {
             color: white;
         }
-        .sidebar, .sidebar a {
+
+        .sidebar,
+        .sidebar a {
             color: white;
         }
-        .btn, .search-btn {
+
+        .btn,
+        .search-btn {
             background: #7F0E16;
             color: white;
         }
+
         .search-btn {
             border: none;
         }
@@ -73,8 +83,10 @@ $result = mysqli_query($conn, $sql);
             <div class="logo-name"><span>Asmr</span>Prog</div>
         </a>
         <ul class="side-menu">
-            <li><a href="#"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
-            <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
+            <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
+            <?php if ($_SESSION['rol'] == 'admin') : ?>
+                <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
+            <?php endif; ?>
             <li><a href="reportes.php"><i class='bx bx-receipt'></i>Reportes</a></li>
         </ul>
         <ul class="side-menu">
@@ -94,8 +106,6 @@ $result = mysqli_query($conn, $sql);
             <i class='bx bx-menu'></i>
             <form action="" method="get">
                 <div class="form-input">
-                    <input type="search" name="search" placeholder="Search..." value="<?php echo htmlspecialchars($search); ?>">
-                    <button class="search-btn" type="submit"><i class='bx bx-search'></i></button>
                 </div>
             </form>
             <a href="#" class="profile">
@@ -123,7 +133,7 @@ $result = mysqli_query($conn, $sql);
                         <i class='bx bx-filter'></i>
                     </div>
 
-                    <table class="table">
+                    <table class="table table-bordered table-hover col-12" id="example">
                         <thead>
                             <tr>
                                 <th scope="col"># Asistencia</th>
@@ -147,7 +157,9 @@ $result = mysqli_query($conn, $sql);
                                     <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
                                     <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
                                     <td>
-                                        <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)" class="btn btn-danger btn-sm"><i class="fa-solid fa-eraser"></i></a>
+                                        <?php if ($_SESSION['rol'] == 'admin') : ?>
+                                            <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)"><i class='bx bxs-trash'></i></a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>
@@ -159,6 +171,52 @@ $result = mysqli_query($conn, $sql);
     </div>
 
     <script src="../jsinicio.js"></script>
+    <script src="../public/bootstrap5/js/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.min.js" integrity="sha384-nsg8ua9HAw1y0W1btsyWgBklPnCUAFLuTMS2G72MMONqmOymq585AcH49TLBQObG" crossorigin="anonymous"></script>
+    <script src="../public/app/publico/js/lib/jquery/jquery.min.js"></script>
+    <script src="../public/app/publico/js/lib/tether/tether.min.js"></script>
+    <script src="../public/app/publico/js/lib/bootstrap/bootstrap.min.js"></script>
+    <script src="../public/app/publico/js/plugins.js"></script>
+    <script src="../public/app/publico/js/lib/datatables-net/datatables.min.js"></script>
+
+    <script>
+        $(function() {
+            $('#example').DataTable({
+                select: {
+                    //style: 'multi'
+                },
+                responsive: true,
+                "language": {
+                    "sProcessing": "Procesando...",
+                    "sLengthMenu": "Mostrar _MENU_ registros",
+                    "sZeroRecords": "No se encontraron resultados",
+                    "sEmptyTable": "Ningún dato disponible en esta tabla =(",
+                    "sInfo": "Registros del _START_ al _END_ de _TOTAL_ registros",
+                    "sInfoEmpty": "Registros del 0 al 0 de 0 registros",
+                    "sInfoFiltered": "-",
+                    "sInfoPostFix": "",
+                    "sSearch": "Buscar:",
+                    "sUrl": "",
+                    "sInfoThousands": ",",
+                    "sLoadingRecords": "Cargando...",
+                    "oPaginate": {
+                        "sFirst": "Primero",
+                        "sLast": "Último",
+                        "sNext": "Siguiente",
+                        "sPrevious": "Anterior"
+                    },
+                    "oAria": {
+                        "sSortAscending": ": Activar para ordenar la columna de manera ascendente",
+                        "sSortDescending": ": Activar para ordenar la columna de manera descendente"
+                    },
+                    "buttons": {
+                        "copy": "Copiar",
+                        "colvis": "Visibilidad"
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
