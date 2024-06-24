@@ -620,5 +620,26 @@ body{
     .content main .bottom-data .reminders .task-list{
         min-width: 340px;
     }
+    /* Submenu dropdown */
+.sidebar .dropdown .dropdown-menu {
+    display: none;
+    padding-left: 20px;
+}
+
+.sidebar .dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.sidebar .dropdown-menu a {
+    display: block;
+    padding: 5px 0;
+    color: white;
+}
+
+.sidebar .dropdown-menu a:hover {
+    color: #7F0E16;
+    text-decoration: none;
+}
+
 
 }

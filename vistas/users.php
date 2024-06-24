@@ -14,12 +14,13 @@ include '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-// Consultar todos los usuarios y sus cargos
-$sql = "SELECT u.id, u.usuario, u.rol, e.emple_nombre, e.emple_apellido, u.tipo_empleado
-        FROM usuarios u
-        JOIN empleados e ON u.id_empleado = e.id_empleado";
-
-$result = mysqli_query($conn, $sql);
+// Consultar todos los usuarios y sus cargos si es administrador
+if ($_SESSION['rol'] == 'admin') {
+    $sql = "SELECT u.id, u.usuario, u.rol, e.emple_nombre, e.emple_apellido, u.tipo_empleado
+            FROM usuarios u
+            JOIN empleados e ON u.id_empleado = e.id_empleado";
+    $result = mysqli_query($conn, $sql);
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,16 +36,23 @@ $result = mysqli_query($conn, $sql);
         body {
             color: white;
         }
-        .table th, .table td {
+
+        .table th,
+        .table td {
             color: white;
         }
-        .sidebar, .sidebar a {
+
+        .sidebar,
+        .sidebar a {
             color: white;
         }
-        .btn, .search-btn {
+
+        .btn,
+        .search-btn {
             background: #7F0E16;
             color: white;
         }
+
         .search-btn {
             border: none;
         }
@@ -60,7 +68,9 @@ $result = mysqli_query($conn, $sql);
         </a>
         <ul class="side-menu">
             <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
-            <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
+            <?php if ($_SESSION['rol'] == 'admin') : ?>
+                <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
+            <?php endif; ?>
             <li><a href="reportes.php"><i class='bx bx-receipt'></i>Reportes</a></li>
         </ul>
         <ul class="side-menu">
@@ -78,6 +88,10 @@ $result = mysqli_query($conn, $sql);
         <!-- Navbar -->
         <nav>
             <i class='bx bx-menu'></i>
+            <form action="" method="get">
+                <div class="form-input">
+                </div>
+            </form>
             <a href="#" class="profile">
                 <img src="../img/user.png">
             </a>
@@ -103,30 +117,34 @@ $result = mysqli_query($conn, $sql);
                         <i class='bx bx-filter'></i>
                     </div>
 
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col"># ID</th>
-                                <th scope="col">Usuario</th>
-                                <th scope="col">Nombre</th>
-                                <th scope="col">Apellido</th>
-                                <th scope="col">Rol</th>
-                                <th scope="col">Cargo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)) : ?>
+                    <?php if ($_SESSION['rol'] == 'admin') : ?>
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($row['id']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['usuario']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_nombre']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_apellido']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['rol']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
+                                    <th scope="col"># ID</th>
+                                    <th scope="col">Usuario</th>
+                                    <th scope="col">Nombre</th>
+                                    <th scope="col">Apellido</th>
+                                    <th scope="col">Rol</th>
+                                    <th scope="col">Cargo</th>
                                 </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php while ($row = mysqli_fetch_assoc($result)) : ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($row['id']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['usuario']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['emple_nombre']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['emple_apellido']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['rol']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    <?php else : ?>
+                        <p>No tienes permiso para ver esta información.</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
