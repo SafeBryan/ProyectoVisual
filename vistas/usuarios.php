@@ -21,8 +21,8 @@
             <div class="logo-name"><span>Asis</span>Tencias</div>
         </a>
         <ul class="side-menu">
-        <li class="active"><a href="/vistas/inicio2.php"><i class='bx bxs-dashboard'></i>Asistencia</a></li>
-            <li><a href="/vistas/usuarios.php"><i class='bx bx-group'></i>Users</a></li>
+            <li><a href="/vistas/inicio2.php"><i class='bx bxs-dashboard'></i>Asistencia</a></li>
+            <li class="active"> <a href="/vistas/usuarios.php"><i class='bx bx-group'></i>Users</a></li>
             <li><a href="/vistas/reportes.php"><i class='bx bx-receipt'></i>Reportes</a></li>
 
 

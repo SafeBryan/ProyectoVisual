@@ -1,170 +1,110 @@
-<!DOCTYPE html>
-<html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="../Estilos/estiloinicio.css">
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, user-scalable=no" name="viewport">
+    <meta content="ie=edge" http-equiv="x-ua-compatible">
+    <title>Plantilla-php</title>
+
+
+    <!-- datatables -->
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
 
-    <title>Asistencias</title>
+
+
+
+    <style>
+        .marca {
+            width: 100%;
+            background: rgb(13, 39, 48);
+            position: fixed;
+            bottom: 0;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .marca__parrafo {
+            margin: 0 !important;
+            color: white;
+        }
+
+        .marca__texto {
+            color: rgb(0, 162, 255);
+            text-decoration: underline;
+        }
+
+        .marca__parrafo span {
+            color: red;
+        }
+
+        .page-content {
+            margin-top: 70px;
+        }
+
+        @media screen and (max-width:1056px) {
+            .page-content {
+                padding: 15px !important;
+            }
+        }
+    </style>
+
 </head>
+<div class="page-content">
+    <h4 class="text-center text-secondary">Asistencia Empleados</h4>
 
-<body>
+    <?php
+    include '../modelo/conexion.php';
+    include '../controlador/eliminarAsistencia.php';
+    $conexion = new Conexion();
+    $conn = $conexion->conectar();
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <a href="#" class="logo">
-            <i class='bx bxs-id-card'></i>
-            <div class="logo-name"><span>Asis</span>Tencias</div>
-        </a>
-        <ul class="side-menu">
-        <li class="active"><a href="/vistas/inicio2.php"><i class='bx bxs-dashboard'></i>Asistencia</a></li>
-            <li><a href="/vistas/usuarios.php"><i class='bx bx-group'></i>Users</a></li>
-            <li><a href="/vistas/reportes.php"><i class='bx bx-receipt'></i>Reportes</a></li>
-
-
-        </ul>
-        <ul class="side-menu">
-            <li>
-
-                <a href="../controlador/cerrarSecion.php" class="logout">
-                    <i class='bx bx-log-out-circle'></i>
-                    Salir
-                </a>
-            </li>
-        </ul>
-    </div>
-    <!-- End of Sidebar -->
-
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Navbar -->
-        <nav>
-            <i class='bx bx-menu'></i>
-            <form action="#">
-
-            </form>
-            <a href="#" class="profile">
-                <img src="../img/user.png">
-            </a>
-        </nav>
-
-        <!-- End of Navbar -->
-
-        <main>
-
-            <?php
-            include '../modelo/conexion.php';
-            include '../controlador/eliminarAsistencia.php';
-            $conexion = new Conexion();
-            $conn = $conexion->conectar();
-
-            // Filtrar registros de asistencia basados en la fecha actual del servidor
-            $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
+    // Filtrar registros de asistencia basados en la fecha actual del servidor
+    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
             FROM empleados e
             JOIN usuarios u ON e.id_empleado = u.id_empleado
             LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
             ";
 
-            $result = mysqli_query($conn, $sql);
-            ?>
-            <div class="header">
-                <div class="left">
-                    <h1>Asistencia Empleados</h1>
-                    <ul class="breadcrumb">
-                        <li><a href="#">
-                                Analiticas
-                            </a></li>
-                    </ul>
-                </div>
+    $result = mysqli_query($conn, $sql);
+    ?>
 
-            </div>
+    <table class="table table-bordered table-hover col-12" id="example">
+        <thead> 
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Empleado</th>
+                <th scope="col">Cédula</th>
+                <th scope="col">Cargo</th>
+                <th scope="col">Fecha Asistencia</th>
+                <th scope="col">Entrada</th>
+                <th scope="col">Salida</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while($row = mysqli_fetch_assoc($result)): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['id_asistencia']); ?></td>
+                    <td><?php echo htmlspecialchars($row['emple_nombre']) . ' ' . htmlspecialchars($row['emple_apellido']); ?></td>
+                    <td><?php echo htmlspecialchars($row['id_empleado']); ?></td>
+                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
+                    <td><?php echo htmlspecialchars($row['fecha_asistencia']); ?></td>
+                    <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
+                    <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
+                    <td>
+                        <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)" class="btn btn-danger btn-sm"><i class="fa-solid fa-eraser"></i></a>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+</div>
+<!-- fin del contenido principal -->
 
-            <!-- Insights -->
-            <ul class="insights">
-                <li>
-                    <i class='bx bx-calendar-check'></i>
-                    <span class="info">
-                        <h3>
-                            1,074
-                        </h3>
-                        <p>Asistencias Diarias</p>
-                    </span>
-                </li>
-                <li>
-                    <i class='bx bx-calendar-check'></i>
-                    <span class="info">
-                        <h3>
-                            1,074
-                        </h3>
-                        <p>Paid Order</p>
-                    </span>
-                </li>
-                <li>
-                    <i class='bx bx-calendar-check'></i>
-                    <span class="info">
-                        <h3>
-                            1,074
-                        </h3>
-                        <p>Paid Order</p>
-                    </span>
-                </li>
-
-            </ul>
-            <!-- End of Insights -->
-
-            <div class="bottom-data">
-                <div class="orders">
-                    <div class="header">
-                        <i class='bx bx-receipt'></i>
-                        <h3>Asistencias</h3>
-                        <i class='bx bx-filter'></i>
-                    </div>
-
-                    <table class="table table-bordered table-hover col-12" id="example">
-                        <thead>
-                            <tr>
-                                <th scope="col"># Asistencia</th>
-                                <th scope="col">Empleado</th>
-                                <th scope="col">Cédula</th>
-                                <th scope="col">Cargo</th>
-                                <th scope="col">Fecha Asistencia</th>
-                                <th scope="col">Entrada</th>
-                                <th scope="col">Salida</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)) : ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($row['id_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_nombre']) . ' ' . htmlspecialchars($row['emple_apellido']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['id_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['fecha_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
-                                    <td>
-                                        <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)"> <i class='bx bxs-trash'></i></a>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-
-            </div>
-
-        </main>
-
-    </div>
-
-    <script src="/jsinicio.js"></script>
-    <script src="../public/bootstrap5/js/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous">
+<!-- por último se carga el footer -->
+<script src="../public/bootstrap5/js/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.min.js" integrity="sha384-nsg8ua9HAw1y0W1btsyWgBklPnCUAFLuTMS2G72MMONqmOymq585AcH49TLBQObG" crossorigin="anonymous">
     </script>
@@ -185,6 +125,9 @@
 
 
     <!-- sweet alert -->
+    <script src="../public/sweet/js/sweetalert2.js"></script>
+    <script src="../public/sweet/js/sweet.js"></script>
+
 
     <script>
         $(function() {
@@ -350,6 +293,6 @@
         })(jQuery);
     </script>
 
-</body>
 
-</html>
+
+
