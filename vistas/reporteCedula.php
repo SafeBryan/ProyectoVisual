@@ -20,7 +20,6 @@ $sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empl
 $result_usuario = mysqli_query($conn, $sql_usuario);
 $usuario = mysqli_fetch_assoc($result_usuario);
 
-
 // Consultar asistencias según el rol del usuario
 if ($_SESSION['rol'] == 'admin') {
     $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
@@ -54,6 +53,11 @@ if (!$result) {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
+    <script>
+        function validateCedulaInput(input) {
+            input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10);
+        }
+    </script>
     <title>Asistencias</title>
     <style>
         body {
@@ -109,10 +113,10 @@ if (!$result) {
                 <ul class="submenu">
                     <?php if ($_SESSION['rol'] == 'admin') : ?>
                         <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php" >Reporte por cédula</a></li>
+                        <li><a href="reporteCedula.php" target="_blank">Reporte por cédula</a></li>
                     <?php endif; ?>
-                    <li><a href="reporteMensual.php" >Reporte Mensual</a></li>
-                    <li><a href="reporteSemanal.php" >Reporte Semanal</a></li>
+                    <li><a href="reporteMensual.php">Reporte Mensual</a></li>
+                    <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
                 </ul>
             </li>
         </ul>
@@ -140,15 +144,14 @@ if (!$result) {
                 <img src="../img/user.png">
             </a>
         </nav>
-
         <!-- End of Navbar -->
 
         <main>
             <div class="header">
                 <div class="left">
-                    <h1>Asistencia Empleados</h1>
+                    <h1>Reportes</h1>
                     <ul class="breadcrumb">
-                        <li><a href="#">Asistencia</a></li>
+                        <li><a href="#">Reporte por Cédula</a></li>
                     </ul>
                 </div>
             </div>
@@ -158,42 +161,17 @@ if (!$result) {
                 <div class="orders">
                     <div class="header">
                         <i class='bx bx-receipt'></i>
-                        <h3>Asistencias</h3>
+                        <h3>Ingrese la Cédula:</h3>
                         <i class='bx bx-filter'></i>
                     </div>
-
-                    <table class="table table-bordered table-hover col-12" id="example">
-                        <thead>
-                            <tr>
-                                <th scope="col"># Asistencia</th>
-                                <th scope="col">Empleado</th>
-                                <th scope="col">Cédula</th>
-                                <th scope="col">Cargo</th>
-                                <th scope="col">Fecha Asistencia</th>
-                                <th scope="col">Entrada</th>
-                                <th scope="col">Salida</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)) : ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($row['id_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_nombre']) . ' ' . htmlspecialchars($row['emple_apellido']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['id_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['fecha_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
-                                    <td>
-                                        <?php if ($_SESSION['rol'] == 'admin') : ?>
-                                            <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)"><i class='bx bxs-trash'></i></a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                    <form id="reporteCedulaForm" action="../reportes/reporteEmpleado.php" method="post" target="_blank" class="w-100">
+                        <div class="mb-3">
+                            <label for="cedula" class="form-label">Cédula:</label>
+                            <input type="text" id="cedula" name="cedula" class="form-control" oninput="validateCedulaInput(this)" required maxlength="10">
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Generar Informe</button>
+                    </form>
+                    
                 </div>
             </div>
         </main>

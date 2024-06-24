@@ -1,46 +1,51 @@
 <?php
 session_start();
 
-// Asegurarse de que el usuario está autenticado
-if (!isset($_SESSION['usuario_id'])) {
+// Asegurarse de que el usuario está autenticado y es administrador
+if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: login.php");
     exit();
 }
 
-// Incluir archivos necesarios
 include '../modelo/conexion.php';
-
-// Crear conexión a la base de datos
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-//obtenemos el nombre de quien inicio session
+// Recibir el id del usuario a editar desde la URL
+$editar_usuario_id = $_GET['id'] ?? '';
+
+// Si no se proporciona un id, redirigir al listado de usuarios
+if (empty($editar_usuario_id)) {
+    header("Location: users.php");
+    exit();
+}
+
 $usuario_id = $_SESSION['usuario_id'];
 $sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
 $result_usuario = mysqli_query($conn, $sql_usuario);
 $usuario = mysqli_fetch_assoc($result_usuario);
 
 
-// Consultar asistencias según el rol del usuario
-if ($_SESSION['rol'] == 'admin') {
-    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
-            FROM empleados e
-            JOIN usuarios u ON e.id_empleado = u.id_empleado
-            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
-            WHERE a.fecha_asistencia = CURDATE()";
+// Consultar la información del usuario a editar
+$sql_usuario = "SELECT id_empleado, usuario, tipo_empleado FROM usuarios WHERE id = '$editar_usuario_id'";
+$result_usuario = mysqli_query($conn, $sql_usuario);
+if ($usuario = mysqli_fetch_assoc($result_usuario)) {
+    $update_success = false;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $usuario = mysqli_real_escape_string($conn, $_POST['usuario']);
+        $tipo_empleado = mysqli_real_escape_string($conn, $_POST['tipo_empleado']);
+
+        $sql_update = "UPDATE usuarios SET usuario = '$usuario', tipo_empleado = '$tipo_empleado' 
+                       WHERE id = '$editar_usuario_id'";
+
+        if (mysqli_query($conn, $sql_update)) {
+            $update_success = true;
+        }
+    }
 } else {
-    $id_empleado = $_SESSION['id_empleado'];
-    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
-            FROM empleados e
-            JOIN usuarios u ON e.id_empleado = u.id_empleado
-            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
-            WHERE e.id_empleado = '$id_empleado' AND a.fecha_asistencia = CURDATE()";
-}
-
-$result = mysqli_query($conn, $sql);
-
-if (!$result) {
-    die("Error en la consulta: " . mysqli_error($conn));
+    echo "Usuario no encontrado.";
+    exit();
 }
 ?>
 
@@ -54,7 +59,7 @@ if (!$result) {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
-    <title>Asistencias</title>
+    <title>Actualizar Información Personal</title>
     <style>
         body {
             color: white;
@@ -89,6 +94,45 @@ if (!$result) {
         .submenu a {
             color: white;
         }
+
+        .navbar-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-profile img {
+            margin-right: 10px;
+        }
+
+        .navbar-profile .username {
+            color: white;
+        }
+
+        .alert {
+            padding: 20px;
+            background-color: green;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .alert.success {
+            background-color: #4CAF50;
+        }
+
+        .closebtn {
+            margin-left: 15px;
+            color: white;
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .closebtn:hover {
+            color: black;
+        }
     </style>
 </head>
 
@@ -109,10 +153,10 @@ if (!$result) {
                 <ul class="submenu">
                     <?php if ($_SESSION['rol'] == 'admin') : ?>
                         <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php" >Reporte por cédula</a></li>
+                        <li><a href="reporteCedula.php">Reporte por cédula</a></li>
                     <?php endif; ?>
-                    <li><a href="reporteMensual.php" >Reporte Mensual</a></li>
-                    <li><a href="reporteSemanal.php" >Reporte Semanal</a></li>
+                    <li><a href="reporteMensual.php">Reporte Mensual</a></li>
+                    <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
                 </ul>
             </li>
         </ul>
@@ -136,19 +180,23 @@ if (!$result) {
                 </div>
             </form>
             <a href="updateInfo.php" class="profile">
-                <span class="username"><?php echo htmlspecialchars($usuario['emple_nombre']) . ' ' . htmlspecialchars($usuario['emple_apellido']); ?></span>
-                <img src="../img/user.png">
+            <span class="username">
+<?php 
+echo (isset($usuario['emple_nombre']) ? htmlspecialchars($usuario['emple_nombre']) : '') . ' ' . 
+     (isset($usuario['emple_apellido']) ? htmlspecialchars($usuario['emple_apellido']) : ''); 
+?>
+</span>
+
             </a>
         </nav>
-
         <!-- End of Navbar -->
 
         <main>
             <div class="header">
                 <div class="left">
-                    <h1>Asistencia Empleados</h1>
+                    <h1>Informacion Personal</h1>
                     <ul class="breadcrumb">
-                        <li><a href="#">Asistencia</a></li>
+                        <li><a href="#">Editar Información</a></li>
                     </ul>
                 </div>
             </div>
@@ -158,42 +206,33 @@ if (!$result) {
                 <div class="orders">
                     <div class="header">
                         <i class='bx bx-receipt'></i>
-                        <h3>Asistencias</h3>
+                        <h3>Datos Personales</h3>
                         <i class='bx bx-filter'></i>
                     </div>
+                    <?php if ($update_success): ?>
+        <p>Información actualizada con éxito.</p>
+    <?php endif; ?>
 
-                    <table class="table table-bordered table-hover col-12" id="example">
-                        <thead>
-                            <tr>
-                                <th scope="col"># Asistencia</th>
-                                <th scope="col">Empleado</th>
-                                <th scope="col">Cédula</th>
-                                <th scope="col">Cargo</th>
-                                <th scope="col">Fecha Asistencia</th>
-                                <th scope="col">Entrada</th>
-                                <th scope="col">Salida</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)) : ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($row['id_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_nombre']) . ' ' . htmlspecialchars($row['emple_apellido']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['id_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['fecha_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
-                                    <td>
-                                        <?php if ($_SESSION['rol'] == 'admin') : ?>
-                                            <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)"><i class='bx bxs-trash'></i></a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+    <form action="updateUser.php?id=<?php echo $editar_usuario_id; ?>" method="post">
+        <label for="id_empleado">ID Empleado:</label>
+        <input type="text" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($usuario['id_empleado']); ?>" readonly>
+        <br>
+        <label for="usuario">Usuario:</label>
+        <input type="text" id="usuario" name="usuario" value="<?php echo htmlspecialchars($usuario['usuario']); ?>" required>
+        <br>
+        <label for="tipo_empleado">Tipo de Empleado:</label>
+        <select id="tipo_empleado" name="tipo_empleado" required>
+            <option value="">Seleccione uno...</option>
+            <?php
+            $tipos = ['docente', 'limpieza', 'administrativo']; // Estos son los valores del enum en la base de datos
+            foreach ($tipos as $tipo) {
+                echo "<option value='$tipo'" . ($tipo == $usuario['tipo_empleado'] ? " selected" : "") . ">$tipo</option>";
+            }
+            ?>
+        </select>
+        <br>
+        <button type="submit">Actualizar Información</button>
+    </form>
                 </div>
             </div>
         </main>
@@ -242,3 +281,5 @@ if (!$result) {
 </body>
 
 </html>
+
+

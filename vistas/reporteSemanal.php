@@ -20,7 +20,6 @@ $sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empl
 $result_usuario = mysqli_query($conn, $sql_usuario);
 $usuario = mysqli_fetch_assoc($result_usuario);
 
-
 // Consultar asistencias según el rol del usuario
 if ($_SESSION['rol'] == 'admin') {
     $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
@@ -54,6 +53,36 @@ if (!$result) {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
+    <script>
+        function setEndDate() {
+            var startDate = document.getElementById('fechaInicio').value;
+            var endDateInput = document.getElementById('fechaFin');
+            if (startDate) {
+                var startDateObj = new Date(startDate);
+                var endDate = new Date(startDateObj.getFullYear(), startDateObj.getMonth(), startDateObj.getDate() + 7);
+
+                endDateInput.min = startDate;
+                endDateInput.value = endDate.toISOString().split('T')[0];  
+                endDateInput.max = endDate.toISOString().split('T')[0];
+            }
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+            var form = document.getElementById('reporteForm');
+            var action = form.action;
+            var method = form.method;
+            var formData = new FormData(form);
+
+            var params = new URLSearchParams();
+            for (var pair of formData.entries()) {
+                params.append(pair[0], pair[1]);
+            }
+
+            var url = action + '?' + params.toString();
+            window.open(url, '_blank');
+        }
+    </script>
     <title>Asistencias</title>
     <style>
         body {
@@ -140,15 +169,14 @@ if (!$result) {
                 <img src="../img/user.png">
             </a>
         </nav>
-
         <!-- End of Navbar -->
 
         <main>
             <div class="header">
                 <div class="left">
-                    <h1>Asistencia Empleados</h1>
+                    <h1>Reportes</h1>
                     <ul class="breadcrumb">
-                        <li><a href="#">Asistencia</a></li>
+                        <li><a href="#">Reporte Semanal</a></li>
                     </ul>
                 </div>
             </div>
@@ -158,42 +186,21 @@ if (!$result) {
                 <div class="orders">
                     <div class="header">
                         <i class='bx bx-receipt'></i>
-                        <h3>Asistencias</h3>
+                        <h3>Seleccion de Fecha:</h3>
                         <i class='bx bx-filter'></i>
                     </div>
-
-                    <table class="table table-bordered table-hover col-12" id="example">
-                        <thead>
-                            <tr>
-                                <th scope="col"># Asistencia</th>
-                                <th scope="col">Empleado</th>
-                                <th scope="col">Cédula</th>
-                                <th scope="col">Cargo</th>
-                                <th scope="col">Fecha Asistencia</th>
-                                <th scope="col">Entrada</th>
-                                <th scope="col">Salida</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)) : ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($row['id_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['emple_nombre']) . ' ' . htmlspecialchars($row['emple_apellido']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['id_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['fecha_asistencia']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_entrada']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['hora_salida']); ?></td>
-                                    <td>
-                                        <?php if ($_SESSION['rol'] == 'admin') : ?>
-                                            <a href="inicio.php?id_asistencia=<?php echo $row['id_asistencia']; ?>" onclick="advertencia(event)"><i class='bx bxs-trash'></i></a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                    <form id="reporteForm" action="../reportes/reporteSemanal.php" method="post" onsubmit="submitForm(event)" class="w-100">
+                        <div class="mb-3">
+                            <label for="fechaInicio" class="form-label">Fecha de inicio:</label>
+                            <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" required onchange="setEndDate()">
+                        </div>
+                        <div class="mb-3">
+                            <label for="fechaFin" class="form-label">Fecha de fin:</label>
+                            <input type="date" id="fechaFin" name="fechaFin" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Generar Informe</button>
+                    </form>
+                    
                 </div>
             </div>
         </main>

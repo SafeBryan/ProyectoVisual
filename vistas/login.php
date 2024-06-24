@@ -79,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
                             <h2>Iniciar Sesion</h2>
                         </div>
                         <div class="input-group mb-3">
-                            <input type="text" id="usuario" name="usuario" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su usuario" required>
+                            <input type="text" id="usuario" name="usuario" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su correo" required>
                         </div>
                         <div class="input-group mb-3">
                             <input type="password" id="contrasenia" name="contrasenia" class="form-control form-control-lg bg-light fs-6" placeholder="Ingrese su contraseña" required>
