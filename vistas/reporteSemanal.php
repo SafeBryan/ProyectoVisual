@@ -14,6 +14,12 @@ include '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
+//obtenemos el nombre de quien inicio session
+$usuario_id = $_SESSION['usuario_id'];
+$sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
+$result_usuario = mysqli_query($conn, $sql_usuario);
+$usuario = mysqli_fetch_assoc($result_usuario);
+
 // Consultar asistencias según el rol del usuario
 if ($_SESSION['rol'] == 'admin') {
     $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
@@ -118,9 +124,9 @@ if (!$result) {
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
-        <a href="#" class="logo">
+        <a href="inicio.php" class="logo">
             <i class='bx bxs-id-card'></i>
-            <div class="logo-name"><span>Asmr</span>Prog</div>
+            <div class="logo-name"><span>Visual</span>APP</div>
         </a>
         <ul class="side-menu">
             <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
@@ -158,7 +164,8 @@ if (!$result) {
                 <div class="form-input">
                 </div>
             </form>
-            <a href="#" class="profile">
+            <a href="updateInfo.php" class="profile">
+                <span class="username"><?php echo htmlspecialchars($usuario['emple_nombre']) . ' ' . htmlspecialchars($usuario['emple_apellido']); ?></span>
                 <img src="../img/user.png">
             </a>
         </nav>

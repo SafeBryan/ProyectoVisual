@@ -14,32 +14,36 @@ include '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-//obtenemos el nombre de quien inicio session
+// Obtener la información del usuario autenticado
 $usuario_id = $_SESSION['usuario_id'];
-$sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
+$sql_usuario = "SELECT e.id_empleado, e.emple_nombre, e.emple_apellido, e.emple_direccion, e.emple_telefono
+                FROM empleados e
+                JOIN usuarios u ON e.id_empleado = u.id_empleado
+                WHERE u.id = '$usuario_id'";
 $result_usuario = mysqli_query($conn, $sql_usuario);
 $usuario = mysqli_fetch_assoc($result_usuario);
 
-// Consultar asistencias según el rol del usuario
-if ($_SESSION['rol'] == 'admin') {
-    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
-            FROM empleados e
-            JOIN usuarios u ON e.id_empleado = u.id_empleado
-            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
-            WHERE a.fecha_asistencia = CURDATE()";
-} else {
-    $id_empleado = $_SESSION['id_empleado'];
-    $sql = "SELECT a.id_asistencia, e.id_empleado, e.emple_nombre, e.emple_apellido, u.tipo_empleado, a.fecha_asistencia, a.hora_entrada, a.hora_salida 
-            FROM empleados e
-            JOIN usuarios u ON e.id_empleado = u.id_empleado
-            LEFT JOIN asistencias a ON e.id_empleado = a.id_empleado
-            WHERE e.id_empleado = '$id_empleado' AND a.fecha_asistencia = CURDATE()";
-}
+$update_success = false;
 
-$result = mysqli_query($conn, $sql);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Actualizar información del usuario
+    $emple_nombre = mysqli_real_escape_string($conn, $_POST['emple_nombre']);
+    $emple_apellido = mysqli_real_escape_string($conn, $_POST['emple_apellido']);
+    $emple_direccion = mysqli_real_escape_string($conn, $_POST['emple_direccion']);
+    $emple_telefono = mysqli_real_escape_string($conn, $_POST['emple_telefono']);
 
-if (!$result) {
-    die("Error en la consulta: " . mysqli_error($conn));
+    $sql_update = "UPDATE empleados SET emple_nombre = '$emple_nombre', emple_apellido = '$emple_apellido', 
+                   emple_direccion = '$emple_direccion', emple_telefono = '$emple_telefono' 
+                   WHERE id_empleado = '{$usuario['id_empleado']}'";
+    
+    if (mysqli_query($conn, $sql_update)) {
+        $update_success = true;
+        // Actualizar los datos del usuario en la sesión
+        $usuario['emple_nombre'] = $emple_nombre;
+        $usuario['emple_apellido'] = $emple_apellido;
+        $usuario['emple_direccion'] = $emple_direccion;
+        $usuario['emple_telefono'] = $emple_telefono;
+    }
 }
 ?>
 
@@ -53,12 +57,7 @@ if (!$result) {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
-    <script>
-        function validateCedulaInput(input) {
-            input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10);
-        }
-    </script>
-    <title>Asistencias</title>
+    <title>Actualizar Información Personal</title>
     <style>
         body {
             color: white;
@@ -93,6 +92,45 @@ if (!$result) {
         .submenu a {
             color: white;
         }
+
+        .navbar-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-profile img {
+            margin-right: 10px;
+        }
+
+        .navbar-profile .username {
+            color: white;
+        }
+
+        .alert {
+            padding: 20px;
+            background-color: green;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .alert.success {
+            background-color: #4CAF50;
+        }
+
+        .closebtn {
+            margin-left: 15px;
+            color: white;
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .closebtn:hover {
+            color: black;
+        }
     </style>
 </head>
 
@@ -113,7 +151,7 @@ if (!$result) {
                 <ul class="submenu">
                     <?php if ($_SESSION['rol'] == 'admin') : ?>
                         <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php" target="_blank">Reporte por cédula</a></li>
+                        <li><a href="reporteCedula.php">Reporte por cédula</a></li>
                     <?php endif; ?>
                     <li><a href="reporteMensual.php">Reporte Mensual</a></li>
                     <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
@@ -149,9 +187,9 @@ if (!$result) {
         <main>
             <div class="header">
                 <div class="left">
-                    <h1>Reportes</h1>
+                    <h1>Informacion Personal</h1>
                     <ul class="breadcrumb">
-                        <li><a href="#">Reporte por Cédula</a></li>
+                        <li><a href="#">Editar Información</a></li>
                     </ul>
                 </div>
             </div>
@@ -161,17 +199,38 @@ if (!$result) {
                 <div class="orders">
                     <div class="header">
                         <i class='bx bx-receipt'></i>
-                        <h3>Ingrese la Cédula:</h3>
+                        <h3>Datos Personales</h3>
                         <i class='bx bx-filter'></i>
                     </div>
-                    <form id="reporteCedulaForm" action="../reportes/reporteEmpleado.php" method="post" target="_blank" class="w-100">
-                        <div class="mb-3">
-                            <label for="cedula" class="form-label">Cédula:</label>
-                            <input type="text" id="cedula" name="cedula" class="form-control" oninput="validateCedulaInput(this)" required maxlength="10">
+                    <?php if ($update_success) : ?>
+                        <div class="alert success">
+                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                            Información actualizada con éxito.
                         </div>
-                        <button type="submit" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Generar Informe</button>
+                    <?php endif; ?>
+                    <form action="updateInfo.php" method="post">
+                        <div class="mb-3">
+                            <label for="id_empleado" class="form-label">ID Empleado</label>
+                            <input type="text" class="form-control" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($usuario['id_empleado']); ?>" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="emple_nombre" name="emple_nombre" value="<?php echo htmlspecialchars($usuario['emple_nombre']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="emple_apellido" name="emple_apellido" value="<?php echo htmlspecialchars($usuario['emple_apellido']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_direccion" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="emple_direccion" name="emple_direccion" value="<?php echo htmlspecialchars($usuario['emple_direccion']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_telefono" class="form-label">Teléfono</label>
+                            <input type="number" class="form-control" id="emple_telefono" name="emple_telefono" value="<?php echo htmlspecialchars($usuario['emple_telefono']); ?>" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Actualizar Información</button>
                     </form>
-                    
                 </div>
             </div>
         </main>

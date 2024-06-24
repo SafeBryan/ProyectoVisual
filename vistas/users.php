@@ -14,6 +14,12 @@ include '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
+//obtenemos el nombre de quien inicio session
+$usuario_id = $_SESSION['usuario_id'];
+$sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
+$result_usuario = mysqli_query($conn, $sql_usuario);
+$usuario = mysqli_fetch_assoc($result_usuario);
+
 // Consultar todos los usuarios y sus cargos si es administrador
 if ($_SESSION['rol'] == 'admin') {
     $sql = "SELECT u.id, u.usuario, u.rol, e.emple_nombre, e.emple_apellido, u.tipo_empleado
@@ -33,7 +39,7 @@ if ($_SESSION['rol'] == 'admin') {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
-    <title>Asistencias</title>
+    <title>Usuarios</title>
     <style>
         body {
             color: white;
@@ -74,9 +80,9 @@ if ($_SESSION['rol'] == 'admin') {
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
-        <a href="#" class="logo">
+        <a href="inicio.php" class="logo">
             <i class='bx bxs-id-card'></i>
-            <div class="logo-name"><span>Asmr</span>Prog</div>
+            <div class="logo-name"><span>Visual</span>APP</div>
         </a>
         <ul class="side-menu">
             <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
@@ -88,7 +94,7 @@ if ($_SESSION['rol'] == 'admin') {
                 <ul class="submenu">
                     <?php if ($_SESSION['rol'] == 'admin') : ?>
                         <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php" target="_blank">Reporte por cédula</a></li>
+                        <li><a href="reporteCedula.php">Reporte por cédula</a></li>
                     <?php endif; ?>
                     <li><a href="reporteMensual.php">Reporte Mensual</a></li>
                     <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
@@ -114,7 +120,8 @@ if ($_SESSION['rol'] == 'admin') {
                 <div class="form-input">
                 </div>
             </form>
-            <a href="#" class="profile">
+            <a href="updateInfo.php" class="profile">
+                <span class="username"><?php echo htmlspecialchars($usuario['emple_nombre']) . ' ' . htmlspecialchars($usuario['emple_apellido']); ?></span>
                 <img src="../img/user.png">
             </a>
         </nav>
@@ -149,6 +156,7 @@ if ($_SESSION['rol'] == 'admin') {
                                     <th scope="col">Apellido</th>
                                     <th scope="col">Rol</th>
                                     <th scope="col">Cargo</th>
+                                    <th scope="col">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -160,6 +168,9 @@ if ($_SESSION['rol'] == 'admin') {
                                         <td><?php echo htmlspecialchars($row['emple_apellido']); ?></td>
                                         <td><?php echo htmlspecialchars($row['rol']); ?></td>
                                         <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
+                                        <td>
+                                            <a href="updateUser.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Modificar</a>
+                                        </td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>
