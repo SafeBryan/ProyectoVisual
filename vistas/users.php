@@ -14,7 +14,14 @@ include '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-//obtenemos el nombre de quien inicio session
+// Eliminar usuario si se recibe una solicitud de eliminación
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user_id'])) {
+    $delete_user_id = mysqli_real_escape_string($conn, $_POST['delete_user_id']);
+    $sql_delete = "DELETE FROM usuarios WHERE id = '$delete_user_id'";
+    mysqli_query($conn, $sql_delete);
+}
+
+// Obtener el nombre de quien inició sesión
 $usuario_id = $_SESSION['usuario_id'];
 $sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
 $result_usuario = mysqli_query($conn, $sql_usuario);
@@ -45,18 +52,15 @@ if ($_SESSION['rol'] == 'admin') {
             color: white;
         }
 
-        .table th,
-        .table td {
+        .table th, .table td {
             color: white;
         }
 
-        .sidebar,
-        .sidebar a {
+        .sidebar, .sidebar a {
             color: white;
         }
 
-        .btn,
-        .search-btn {
+        .btn, .search-btn {
             background: #7F0E16;
             color: white;
         }
@@ -73,6 +77,11 @@ if ($_SESSION['rol'] == 'admin') {
 
         .submenu a {
             color: white;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
         }
     </style>
 </head>
@@ -136,7 +145,9 @@ if ($_SESSION['rol'] == 'admin') {
                     </ul>
                 </div>
                 <div class="right">
-                    <a href="crearUsuario.php" class="btn btn-sm btn-primary">Crear Usuario</a>
+                    <a href="crearUsuario.php" class="btn btn-sm btn-primary">
+                        <i class='bx bx-plus-medical'></i>
+                    </a>
                 </div>
             </div>
 
@@ -172,7 +183,15 @@ if ($_SESSION['rol'] == 'admin') {
                                         <td><?php echo htmlspecialchars($row['rol']); ?></td>
                                         <td><?php echo htmlspecialchars($row['tipo_empleado']); ?></td>
                                         <td>
-                                            <a href="updateUser.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Modificar</a>
+                                            <a href="updateUser.php?id=<?php echo $row['id']; ?>" class="btn-icon">
+                                                <i class='bx bx-edit'></i>
+                                            </a>
+                                            <form action="users.php" method="post" style="display:inline;">
+                                                <input type="hidden" name="delete_user_id" value="<?php echo $row['id']; ?>">
+                                                <button type="submit" class="btn-icon" onclick="return confirm('¿Estás seguro de que deseas eliminar este usuario?');">
+                                                    <i class='bx bx-trash'></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>

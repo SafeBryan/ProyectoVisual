@@ -166,7 +166,7 @@ if (!$result) {
                     </div>
                     <form id="reporteCedulaForm" action="../reportes/reporteEmpleado.php" method="post" target="_blank" class="w-100">
                         <div class="mb-3">
-                            <label for="cedula" class="form-label">Cédula:</label>
+                            <label for="cedula" class="form-control form-control-lg bg-light fs-6"">Cédula:</label>
                             <input type="text" id="cedula" name="cedula" class="form-control" oninput="validateCedulaInput(this)" required maxlength="10">
                         </div>
                         <button type="submit" class="btn btn-lg btn-primary w-100 fs-6" style="background: #7F0E16;">Generar Informe</button>

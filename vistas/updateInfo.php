@@ -8,7 +8,7 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 
 // Incluir archivos necesarios
-include '../modelo/conexion.php';
+require_once '../modelo/conexion.php';
 
 // Crear conexión a la base de datos
 $conexion = new Conexion();
@@ -24,258 +24,101 @@ $result_usuario = mysqli_query($conn, $sql_usuario);
 $usuario = mysqli_fetch_assoc($result_usuario);
 
 $update_success = false;
+$error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Actualizar información del usuario
     $emple_nombre = mysqli_real_escape_string($conn, $_POST['emple_nombre']);
     $emple_apellido = mysqli_real_escape_string($conn, $_POST['emple_apellido']);
     $emple_direccion = mysqli_real_escape_string($conn, $_POST['emple_direccion']);
     $emple_telefono = mysqli_real_escape_string($conn, $_POST['emple_telefono']);
 
-    $sql_update = "UPDATE empleados SET emple_nombre = '$emple_nombre', emple_apellido = '$emple_apellido', 
-                   emple_direccion = '$emple_direccion', emple_telefono = '$emple_telefono' 
-                   WHERE id_empleado = '{$usuario['id_empleado']}'";
-    
-    if (mysqli_query($conn, $sql_update)) {
-        $update_success = true;
-        // Actualizar los datos del usuario en la sesión
-        $usuario['emple_nombre'] = $emple_nombre;
-        $usuario['emple_apellido'] = $emple_apellido;
-        $usuario['emple_direccion'] = $emple_direccion;
-        $usuario['emple_telefono'] = $emple_telefono;
+    // Validar que el teléfono tenga exactamente 10 dígitos
+    if (preg_match('/^\d{10}$/', $emple_telefono)) {
+        $sql_update = "UPDATE empleados SET emple_nombre = '$emple_nombre', emple_apellido = '$emple_apellido', 
+                       emple_direccion = '$emple_direccion', emple_telefono = '$emple_telefono' 
+                       WHERE id_empleado = '{$usuario['id_empleado']}'";
+        
+        if (mysqli_query($conn, $sql_update)) {
+            $update_success = true;
+            // Actualizar los datos del usuario en la sesión
+            $usuario['emple_nombre'] = $emple_nombre;
+            $usuario['emple_apellido'] = $emple_apellido;
+            $usuario['emple_direccion'] = $emple_direccion;
+            $usuario['emple_telefono'] = $emple_telefono;
+        }
+    } else {
+        $error_message = "El número de teléfono debe contener exactamente 10 dígitos.";
     }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="../Estilos/estiloinicio.css">
-    <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
-    <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="../Estilos/estilologin.css">
     <title>Actualizar Información Personal</title>
-    <style>
-        body {
-            color: white;
-        }
-
-        .table th,
-        .table td {
-            color: white;
-        }
-
-        .sidebar,
-        .sidebar a {
-            color: white;
-        }
-
-        .btn,
-        .search-btn {
-            background: #7F0E16;
-            color: white;
-        }
-
-        .search-btn {
-            border: none;
-        }
-
-        .submenu {
-            display: none;
-            list-style: none;
-            padding-left: 20px;
-        }
-
-        .submenu a {
-            color: white;
-        }
-
-        .navbar-profile {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-profile img {
-            margin-right: 10px;
-        }
-
-        .navbar-profile .username {
-            color: white;
-        }
-
-        .alert {
-            padding: 20px;
-            background-color: green;
-            color: white;
-            margin-bottom: 15px;
-        }
-
-        .alert.success {
-            background-color: #4CAF50;
-        }
-
-        .closebtn {
-            margin-left: 15px;
-            color: white;
-            font-weight: bold;
-            float: right;
-            font-size: 22px;
-            line-height: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .closebtn:hover {
-            color: black;
-        }
-    </style>
 </head>
-
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <a href="inicio.php" class="logo">
-            <i class='bx bxs-id-card'></i>
-            <div class="logo-name"><span>Visual</span>APP</div>
-        </a>
-        <ul class="side-menu">
-            <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
-            <?php if ($_SESSION['rol'] == 'admin') : ?>
-                <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
-            <?php endif; ?>
-            <li>
-                <a href="#" class="submenu-toggle"><i class='bx bx-receipt'></i>Reportes</a>
-                <ul class="submenu">
-                    <?php if ($_SESSION['rol'] == 'admin') : ?>
-                        <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php">Reporte por cédula</a></li>
-                    <?php endif; ?>
-                    <li><a href="reporteMensual.php">Reporte Mensual</a></li>
-                    <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
-                </ul>
-            </li>
-        </ul>
-        <ul class="side-menu">
-            <li>
-                <a href="../controlador/cerrarSecion.php" class="logout">
-                    <i class='bx bx-log-out-circle'></i>Salir
-                </a>
-            </li>
-        </ul>
-    </div>
-    <!-- End of Sidebar -->
-
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Navbar -->
-        <nav>
-            <i class='bx bx-menu'></i>
-            <form action="" method="get">
-                <div class="form-input">
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="row border rounded-5 p-5 bg-white shadow">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <a href="users.php" class="btn btn-outline-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l5.147 5.146a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
+                        </svg>
+                        Volver
+                    </a>
                 </div>
-            </form>
-            <a href="updateInfo.php" class="profile">
-                <span class="username"><?php echo htmlspecialchars($usuario['emple_nombre']) . ' ' . htmlspecialchars($usuario['emple_apellido']); ?></span>
-                <img src="../img/user.png">
-            </a>
-        </nav>
-        <!-- End of Navbar -->
-
-        <main>
-            <div class="header">
-                <div class="left">
-                    <h1>Informacion Personal</h1>
-                    <ul class="breadcrumb">
-                        <li><a href="#">Editar Información</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Bottom Data -->
-            <div class="bottom-data">
-                <div class="orders">
-                    <div class="header">
-                        <i class='bx bx-receipt'></i>
-                        <h3>Datos Personales</h3>
-                        <i class='bx bx-filter'></i>
+                <h2 class="text-center mb-4">Actualizar Información Personal</h2>
+                <?php if (!empty($error_message)) : ?>
+                    <div class="alert alert-danger"><?php echo $error_message; ?></div>
+                <?php endif; ?>
+                <?php if ($update_success) : ?>
+                    <div class="alert alert-success">Información actualizada con éxito.</div>
+                <?php endif; ?>
+                <form action="updateInfo.php" method="post">
+                    <div class="mb-3">
+                        <label for="id_empleado" class="form-label">ID Empleado</label>
+                        <input type="text" class="form-control" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($usuario['id_empleado']); ?>" readonly>
                     </div>
-                    <?php if ($update_success) : ?>
-                        <div class="alert success">
-                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
-                            Información actualizada con éxito.
-                        </div>
-                    <?php endif; ?>
-                    <form action="updateInfo.php" method="post">
-                        <div class="mb-3">
-                            <label for="id_empleado" class="form-label">ID Empleado</label>
-                            <input type="text" class="form-control" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($usuario['id_empleado']); ?>" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emple_nombre" class="form-label">Nombre</label>
-                            <input type="text" class="form-control" id="emple_nombre" name="emple_nombre" value="<?php echo htmlspecialchars($usuario['emple_nombre']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emple_apellido" class="form-label">Apellido</label>
-                            <input type="text" class="form-control" id="emple_apellido" name="emple_apellido" value="<?php echo htmlspecialchars($usuario['emple_apellido']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emple_direccion" class="form-label">Dirección</label>
-                            <input type="text" class="form-control" id="emple_direccion" name="emple_direccion" value="<?php echo htmlspecialchars($usuario['emple_direccion']); ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emple_telefono" class="form-label">Teléfono</label>
-                            <input type="number" class="form-control" id="emple_telefono" name="emple_telefono" value="<?php echo htmlspecialchars($usuario['emple_telefono']); ?>" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Actualizar Información</button>
-                    </form>
-                </div>
+                    <div class="mb-3">
+                        <label for="emple_nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="emple_nombre" name="emple_nombre" value="<?php echo htmlspecialchars($usuario['emple_nombre']); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emple_apellido" class="form-label">Apellido</label>
+                        <input type="text" class="form-control" id="emple_apellido" name="emple_apellido" value="<?php echo htmlspecialchars($usuario['emple_apellido']); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emple_direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="emple_direccion" name="emple_direccion" value="<?php echo htmlspecialchars($usuario['emple_direccion']); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emple_telefono" class="form-label">Teléfono</label>
+                        <input type="number" class="form-control" id="emple_telefono" name="emple_telefono" value="<?php echo htmlspecialchars($usuario['emple_telefono']); ?>" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" style="background: #7F0E16;">Actualizar Información</button>
+                </form>
             </div>
-        </main>
+        </div>
     </div>
 
-    <script src="../jsinicio.js"></script>
-    <script src="../public/bootstrap5/js/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.min.js" integrity="sha384-nsg8ua9HAw1y0W1btsyWgBklPnCUAFLuTMS2G72MMONqmOymq585AcH49TLBQObG" crossorigin="anonymous"></script>
-    <script src="../public/app/publico/js/lib/jquery/jquery.min.js"></script>
-    <script src="../public/app/publico/js/lib/tether/tether.min.js"></script>
-    <script src="../public/app/publico/js/lib/bootstrap/bootstrap.min.js"></script>
-    <script src="../public/app/publico/js/plugins.js"></script>
-    <script src="../public/app/publico/js/lib/datatables-net/datatables.min.js"></script>
-
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        $(document).ready(function() {
-            $('.submenu-toggle').click(function(e) {
-                e.preventDefault();
-                $(this).next('.submenu').slideToggle();
-            });
-
-            $('#example').DataTable({
-                responsive: true,
-                language: {
-                    sProcessing: "Procesando...",
-                    sLengthMenu: "Mostrar _MENU_ registros",
-                    sZeroRecords: "No se encontraron resultados",
-                    sEmptyTable: "Ningún dato disponible en esta tabla =(",
-                    sInfo: "Registros del _START_ al _END_ de _TOTAL_ registros",
-                    sInfoEmpty: "Registros del 0 al 0 de 0 registros",
-                    sSearch: "Buscar:",
-                    oPaginate: {
-                        sFirst: "Primero",
-                        sLast: "Último",
-                        sNext: "Siguiente",
-                        sPrevious: "Anterior"
-                    },
-                    buttons: {
-                        copy: "Copiar",
-                        colvis: "Visibilidad"
-                    }
-                }
-            });
+        AOS.init({
+            offset: 120,
+            delay: 0,
+            duration: 400,
+            easing: 'ease',
+            once: false,
+            mirror: false,
+            anchorPlacement: 'top-bottom',
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

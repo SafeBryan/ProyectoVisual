@@ -16,38 +16,73 @@ $conn = $conexion->conectar();
 
 $update_success = false;
 $error_message = '';
+$form_data = [
+    'id_empleado' => '',
+    'emple_nombre' => '',
+    'emple_apellido' => '',
+    'emple_direccion' => '',
+    'emple_telefono' => '',
+    'usuario' => '',
+    'contrasenia' => '',
+    'tipo_empleado' => '',
+    'rol' => ''
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Obtener y sanitizar los datos del formulario
-    $id_empleado = mysqli_real_escape_string($conn, $_POST['id_empleado']);
-    if (!preg_match('/^\d{10}$/', $id_empleado)) {
-        $error_message = "Error: id_empleado debe ser un número de 10 dígitos";
+    $form_data['id_empleado'] = mysqli_real_escape_string($conn, $_POST['id_empleado']);
+    $form_data['emple_telefono'] = mysqli_real_escape_string($conn, $_POST['emple_telefono']);
+
+    // Validar que id_empleado y emple_telefono tengan exactamente 10 dígitos
+    if (!preg_match('/^\d{10}$/', $form_data['id_empleado'])) {
+        $error_message = "Error: ID Empleado debe ser un número de 10 dígitos.";
+    } elseif (!preg_match('/^\d{10}$/', $form_data['emple_telefono'])) {
+        $error_message = "Error: Teléfono debe ser un número de 10 dígitos.";
     } else {
-        $emple_nombre = mysqli_real_escape_string($conn, $_POST['emple_nombre']);
-        $emple_apellido = mysqli_real_escape_string($conn, $_POST['emple_apellido']);
-        $emple_direccion = mysqli_real_escape_string($conn, $_POST['emple_direccion']);
-        $emple_telefono = mysqli_real_escape_string($conn, $_POST['emple_telefono']);
-        $usuario = mysqli_real_escape_string($conn, $_POST['usuario']);
-        $contrasenia = password_hash(mysqli_real_escape_string($conn, $_POST['contrasenia']), PASSWORD_BCRYPT);
-        $tipo_empleado = mysqli_real_escape_string($conn, $_POST['tipo_empleado']);
-        $rol = mysqli_real_escape_string($conn, $_POST['rol']);
+        // Verificar si el id_empleado ya existe
+        $sql_check_id = "SELECT id_empleado FROM empleados WHERE id_empleado = '{$form_data['id_empleado']}'";
+        $result_check_id = mysqli_query($conn, $sql_check_id);
 
-        // Insertar datos en la tabla de empleados
-        $sql_insert_empleado = "INSERT INTO empleados (id_empleado, emple_nombre, emple_apellido, emple_direccion, emple_telefono) 
-                                VALUES ('$id_empleado', '$emple_nombre', '$emple_apellido', '$emple_direccion', '$emple_telefono')";
-
-        if (mysqli_query($conn, $sql_insert_empleado)) {
-            // Insertar datos en la tabla de usuarios
-            $sql_insert_usuario = "INSERT INTO usuarios (usuario, contrasenia, rol, tipo_empleado, id_empleado) 
-                                   VALUES ('$usuario', '$contrasenia', '$rol', '$tipo_empleado', '$id_empleado')";
-
-            if (mysqli_query($conn, $sql_insert_usuario)) {
-                $update_success = true;
-            } else {
-                $error_message = "Error al crear el usuario: " . mysqli_error($conn);
-            }
+        if (mysqli_num_rows($result_check_id) > 0) {
+            $error_message = "Error: Cédula existente.";
         } else {
-            $error_message = "Error al crear el empleado: " . mysqli_error($conn);
+            $form_data['emple_nombre'] = mysqli_real_escape_string($conn, $_POST['emple_nombre']);
+            $form_data['emple_apellido'] = mysqli_real_escape_string($conn, $_POST['emple_apellido']);
+            $form_data['emple_direccion'] = mysqli_real_escape_string($conn, $_POST['emple_direccion']);
+            $form_data['usuario'] = mysqli_real_escape_string($conn, $_POST['usuario']);
+            $form_data['contrasenia'] = password_hash(mysqli_real_escape_string($conn, $_POST['contrasenia']), PASSWORD_BCRYPT);
+            $form_data['tipo_empleado'] = mysqli_real_escape_string($conn, $_POST['tipo_empleado']);
+            $form_data['rol'] = mysqli_real_escape_string($conn, $_POST['rol']);
+
+            // Insertar datos en la tabla de empleados
+            $sql_insert_empleado = "INSERT INTO empleados (id_empleado, emple_nombre, emple_apellido, emple_direccion, emple_telefono) 
+                                    VALUES ('{$form_data['id_empleado']}', '{$form_data['emple_nombre']}', '{$form_data['emple_apellido']}', '{$form_data['emple_direccion']}', '{$form_data['emple_telefono']}')";
+
+            if (mysqli_query($conn, $sql_insert_empleado)) {
+                // Insertar datos en la tabla de usuarios
+                $sql_insert_usuario = "INSERT INTO usuarios (usuario, contrasenia, rol, tipo_empleado, id_empleado) 
+                                       VALUES ('{$form_data['usuario']}', '{$form_data['contrasenia']}', '{$form_data['rol']}', '{$form_data['tipo_empleado']}', '{$form_data['id_empleado']}')";
+
+                if (mysqli_query($conn, $sql_insert_usuario)) {
+                    $update_success = true;
+                    // Limpiar datos del formulario
+                    $form_data = [
+                        'id_empleado' => '',
+                        'emple_nombre' => '',
+                        'emple_apellido' => '',
+                        'emple_direccion' => '',
+                        'emple_telefono' => '',
+                        'usuario' => '',
+                        'contrasenia' => '',
+                        'tipo_empleado' => '',
+                        'rol' => ''
+                    ];
+                } else {
+                    $error_message = "Error al crear el usuario: " . mysqli_error($conn);
+                }
+            } else {
+                $error_message = "Error al crear el empleado: " . mysqli_error($conn);
+            }
         }
     }
 }
@@ -59,257 +94,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="../Estilos/estiloinicio.css">
-    <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
-    <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../Estilos/estilologin.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css">
     <title>Crear Usuario</title>
-    <style>
-        body {
-            color: white;
-        }
-
-        .table th,
-        .table td {
-            color: white;
-        }
-
-        .sidebar,
-        .sidebar a {
-            color: white;
-        }
-
-        .btn,
-        .search-btn {
-            background: #7F0E16;
-            color: white;
-        }
-
-        .search-btn {
-            border: none;
-        }
-
-        .submenu {
-            display: none;
-            list-style: none;
-            padding-left: 20px;
-        }
-
-        .submenu a {
-            color: white;
-        }
-
-        .navbar-profile {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-profile img {
-            margin-right: 10px;
-        }
-
-        .navbar-profile .username {
-            color: white;
-        }
-
-        .alert {
-            padding: 20px;
-            background-color: green;
-            color: white;
-            margin-bottom: 15px;
-        }
-
-        .alert.success {
-            background-color: #4CAF50;
-        }
-
-        .alert.error {
-            background-color: #f44336;
-        }
-
-        .closebtn {
-            margin-left: 15px;
-            color: white;
-            font-weight: bold;
-            float: right;
-            font-size: 22px;
-            line-height: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .closebtn:hover {
-            color: black;
-        }
-    </style>
 </head>
 
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <a href="inicio.php" class="logo">
-            <i class='bx bxs-id-card'></i>
-            <div class="logo-name"><span>Visual</span>APP</div>
-        </a>
-        <ul class="side-menu">
-            <li><a href="inicio.php"><i class='bx bxs-dashboard'></i>Dashboard</a></li>
-            <?php if ($_SESSION['rol'] == 'admin') : ?>
-                <li><a href="users.php"><i class='bx bx-group'></i>Users</a></li>
-            <?php endif; ?>
-            <li>
-                <a href="#" class="submenu-toggle"><i class='bx bx-receipt'></i>Reportes</a>
-                <ul class="submenu">
-                    <?php if ($_SESSION['rol'] == 'admin') : ?>
-                        <li><a href="../reportes/reporteGlobal.php" target="_blank">Reporte Global</a></li>
-                        <li><a href="reporteCedula.php">Reporte por cédula</a></li>
-                    <?php endif; ?>
-                    <li><a href="reporteMensual.php">Reporte Mensual</a></li>
-                    <li><a href="reporteSemanal.php">Reporte Semanal</a></li>
-                </ul>
-            </li>
-        </ul>
-        <ul class="side-menu">
-            <li>
-                <a href="../controlador/cerrarSecion.php" class="logout">
-                    <i class='bx bx-log-out-circle'></i>Salir
-                </a>
-            </li>
-        </ul>
-    </div>
-    <!-- End of Sidebar -->
-
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Navbar -->
-        <nav>
-            <i class='bx bx-menu'></i>
-            <form action="" method="get">
-                <div class="form-input">
-                </div>
-            </form>
-            <a href="updateInfo.php" class="profile">
-                <img src="../img/user.png">
-            </a>
-        </nav>
-        <!-- End of Navbar -->
-
-        <main>
-            <div class="header">
-                <div class="left">
-                    <h1>Crear Usuario</h1>
-                    <ul class="breadcrumb">
-                        <li><a href="#">Nuevo Usuario</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Bottom Data -->
-            <div class="bottom-data">
-                <div class="orders">
-                    <div class="header">
-                        <i class='bx bx-receipt'></i>
-                        <h3>Datos del Usuario</h3>
-                        <i class='bx bx-filter'></i>
+    <div class="container d-flex justify-content-center align-items-center min-vh-100" data-aos="fade-up" data-aos-delay="200">
+        <div class="row border rounded-5 p-3 bg-white shadow box-area">
+            <div data-aos="fade-down" data-aos-delay="250" class="col-md-12 right-box">
+                <div class="row align-items-center">
+                    <div class="mb-3">
+                        <a href="users.php" class="btn btn-outline-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l5.147 5.146a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8z"/>
+                            </svg>
+                            Volver
+                        </a>
                     </div>
                     <?php if ($update_success) : ?>
-                        <div class="alert success">
-                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
                             Usuario creado con éxito.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php elseif (!empty($error_message)) : ?>
-                        <div class="alert error">
-                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <?php echo htmlspecialchars($error_message); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
                     <form action="crearUsuario.php" method="post">
                         <div class="mb-3">
                             <label for="id_empleado" class="form-label">ID Empleado</label>
-                            <input type="text" class="form-control" id="id_empleado" name="id_empleado" required pattern="\d{10}" title="Debe ser un número de 10 dígitos">
+                            <input type="number" class="form-control form-control-lg bg-light fs-6" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($form_data['id_empleado']); ?>" required pattern="\d{10}" title="Debe ser un número de 10 dígitos" maxlength="10">
                         </div>
                         <div class="mb-3">
                             <label for="emple_nombre" class="form-label">Nombre</label>
-                            <input type="text" class="form-control" id="emple_nombre" name="emple_nombre" required>
+                            <input type="text" class="form-control form-control-lg bg-light fs-6" id="emple_nombre" name="emple_nombre" value="<?php echo htmlspecialchars($form_data['emple_nombre']); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="emple_apellido" class="form-label">Apellido</label>
-                            <input type="text" class="form-control" id="emple_apellido" name="emple_apellido" required>
+                            <input type="text" class="form-control form-control-lg bg-light fs-6" id="emple_apellido" name="emple_apellido" value="<?php echo htmlspecialchars($form_data['emple_apellido']); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="emple_direccion" class="form-label">Dirección</label>
-                            <input type="text" class="form-control" id="emple_direccion" name="emple_direccion" required>
+                            <input type="text" class="form-control form-control-lg bg-light fs-6" id="emple_direccion" name="emple_direccion" value="<?php echo htmlspecialchars($form_data['emple_direccion']); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="emple_telefono" class="form-label">Teléfono</label>
-                            <input type="number" class="form-control" id="emple_telefono" name="emple_telefono" required>
+                            <input type="number" class="form-control form-control-lg bg-light fs-6" id="emple_telefono" name="emple_telefono" value="<?php echo htmlspecialchars($form_data['emple_telefono']); ?>" required pattern="\d{10}" title="Debe ser un número de 10 dígitos" maxlength="10">
                         </div>
                         <div class="mb-3">
                             <label for="usuario" class="form-label">Usuario</label>
-                            <input type="text" class="form-control" id="usuario" name="usuario" required>
+                            <input type="text" class="form-control form-control-lg bg-light fs-6" id="usuario" name="usuario" value="<?php echo htmlspecialchars($form_data['usuario']); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="contrasenia" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="contrasenia" name="contrasenia" required>
+                            <input type="password" class="form-control form-control-lg bg-light fs-6" id="contrasenia" name="contrasenia" value="<?php echo htmlspecialchars($form_data['contrasenia']); ?>" required>
                         </div>
                         <div class="mb-3">
                             <label for="tipo_empleado" class="form-label">Tipo de Empleado</label>
-                            <select class="form-control" id="tipo_empleado" name="tipo_empleado" required>
-                                <option value="docente">Docente</option>
-                                <option value="limpieza">Limpieza</option>
-                                <option value="administrativo">Administrativo</option>
+                            <select class="form-control form-control-lg bg-light fs-6" id="tipo_empleado" name="tipo_empleado" required>
+                                <option value="docente" <?php echo $form_data['tipo_empleado'] == 'docente' ? 'selected' : ''; ?>>Docente</option>
+                                <option value="limpieza" <?php echo $form_data['tipo_empleado'] == 'limpieza' ? 'selected' : ''; ?>>Limpieza</option>
+                                <option value="administrativo" <?php echo $form_data['tipo_empleado'] == 'administrativo' ? 'selected' : ''; ?>>Administrativo</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="rol" class="form-label">Rol</label>
-                            <select class="form-control" id="rol" name="rol" required>
-                                <option value="admin">Admin</option>
-                                <option value="empleado">Empleado</option>
+                            <select class="form-control form-control-lg bg-light fs-6" id="rol" name="rol" required>
+                                <option value="admin" <?php echo $form_data['rol'] == 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                <option value="empleado" <?php echo $form_data['rol'] == 'empleado' ? 'selected' : ''; ?>>Empleado</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fs-6" style="background: #7F0E16;">Crear Usuario</button>
                     </form>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <script src="../jsinicio.js"></script>
-    <script src="../public/bootstrap5/js/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.min.js" integrity="sha384-nsg8ua9HAw1y0W1btsyWgBklPnCUAFLuTMS2G72MMONqmOymq585AcH49TLBQObG" crossorigin="anonymous"></script>
-    <script src="../public/app/publico/js/lib/jquery/jquery.min.js"></script>
-    <script src="../public/app/publico/js/lib/tether/tether.min.js"></script>
-    <script src="../public/app/publico/js/lib/bootstrap/bootstrap.min.js"></script>
-    <script src="../public/app/publico/js/plugins.js"></script>
-    <script src="../public/app/publico/js/lib/datatables-net/datatables.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        $(document).ready(function() {
-            $('.submenu-toggle').click(function(e) {
-                e.preventDefault();
-                $(this).next('.submenu').slideToggle();
-            });
-
-            $('#example').DataTable({
-                responsive: true,
-                language: {
-                    sProcessing: "Procesando...",
-                    sLengthMenu: "Mostrar _MENU_ registros",
-                    sZeroRecords: "No se encontraron resultados",
-                    sEmptyTable: "Ningún dato disponible en esta tabla =(",
-                    sInfo: "Registros del _START_ al _END_ de _TOTAL_ registros",
-                    sInfoEmpty: "Registros del 0 al 0 de 0 registros",
-                    sSearch: "Buscar:",
-                    oPaginate: {
-                        sFirst: "Primero",
-                        sLast: "Último",
-                        sNext: "Siguiente",
-                        sPrevious: "Anterior"
-                    },
-                    buttons: {
-                        copy: "Copiar",
-                        colvis: "Visibilidad"
-                    }
-                });
+        AOS.init({
+            offset: 120,
+            delay: 0,
+            duration: 400,
+            easing: 'ease',
+            once: false,
+            mirror: false,
+            anchorPlacement: 'top-bottom',
         });
     </script>
 </body>
