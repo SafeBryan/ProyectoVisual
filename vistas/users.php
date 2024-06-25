@@ -135,6 +135,9 @@ if ($_SESSION['rol'] == 'admin') {
                         <li><a href="#">Usuarios</a></li>
                     </ul>
                 </div>
+                <div class="right">
+                    <a href="crearUsuario.php" class="btn btn-sm btn-primary">Crear Usuario</a>
+                </div>
             </div>
 
             <!-- Bottom Data -->

@@ -1,51 +1,55 @@
 <?php
 session_start();
 
-// Asegurarse de que el usuario está autenticado y es administrador
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: login.php");
+// Asegurarse de que el usuario está autenticado
+if (!isset($_SESSION['usuario_id'])) {
+    header("Location: ../vistas/login.php");
     exit();
 }
 
+// Incluir archivos necesarios
 include '../modelo/conexion.php';
+
+// Crear conexión a la base de datos
 $conexion = new Conexion();
 $conn = $conexion->conectar();
 
-// Recibir el id del usuario a editar desde la URL
-$editar_usuario_id = $_GET['id'] ?? '';
+$update_success = false;
+$error_message = '';
 
-// Si no se proporciona un id, redirigir al listado de usuarios
-if (empty($editar_usuario_id)) {
-    header("Location: users.php");
-    exit();
-}
-
-$usuario_id = $_SESSION['usuario_id'];
-$sql_usuario = "SELECT emple_nombre, emple_apellido FROM empleados WHERE id_empleado = (SELECT id_empleado FROM usuarios WHERE id = '$usuario_id')";
-$result_usuario = mysqli_query($conn, $sql_usuario);
-$usuario = mysqli_fetch_assoc($result_usuario);
-
-
-// Consultar la información del usuario a editar
-$sql_usuario = "SELECT id_empleado, usuario, tipo_empleado FROM usuarios WHERE id = '$editar_usuario_id'";
-$result_usuario = mysqli_query($conn, $sql_usuario);
-if ($usuario = mysqli_fetch_assoc($result_usuario)) {
-    $update_success = false;
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Obtener y sanitizar los datos del formulario
+    $id_empleado = mysqli_real_escape_string($conn, $_POST['id_empleado']);
+    if (!preg_match('/^\d{10}$/', $id_empleado)) {
+        $error_message = "Error: id_empleado debe ser un número de 10 dígitos";
+    } else {
+        $emple_nombre = mysqli_real_escape_string($conn, $_POST['emple_nombre']);
+        $emple_apellido = mysqli_real_escape_string($conn, $_POST['emple_apellido']);
+        $emple_direccion = mysqli_real_escape_string($conn, $_POST['emple_direccion']);
+        $emple_telefono = mysqli_real_escape_string($conn, $_POST['emple_telefono']);
         $usuario = mysqli_real_escape_string($conn, $_POST['usuario']);
+        $contrasenia = password_hash(mysqli_real_escape_string($conn, $_POST['contrasenia']), PASSWORD_BCRYPT);
         $tipo_empleado = mysqli_real_escape_string($conn, $_POST['tipo_empleado']);
+        $rol = mysqli_real_escape_string($conn, $_POST['rol']);
 
-        $sql_update = "UPDATE usuarios SET usuario = '$usuario', tipo_empleado = '$tipo_empleado' 
-                       WHERE id = '$editar_usuario_id'";
+        // Insertar datos en la tabla de empleados
+        $sql_insert_empleado = "INSERT INTO empleados (id_empleado, emple_nombre, emple_apellido, emple_direccion, emple_telefono) 
+                                VALUES ('$id_empleado', '$emple_nombre', '$emple_apellido', '$emple_direccion', '$emple_telefono')";
 
-        if (mysqli_query($conn, $sql_update)) {
-            $update_success = true;
+        if (mysqli_query($conn, $sql_insert_empleado)) {
+            // Insertar datos en la tabla de usuarios
+            $sql_insert_usuario = "INSERT INTO usuarios (usuario, contrasenia, rol, tipo_empleado, id_empleado) 
+                                   VALUES ('$usuario', '$contrasenia', '$rol', '$tipo_empleado', '$id_empleado')";
+
+            if (mysqli_query($conn, $sql_insert_usuario)) {
+                $update_success = true;
+            } else {
+                $error_message = "Error al crear el usuario: " . mysqli_error($conn);
+            }
+        } else {
+            $error_message = "Error al crear el empleado: " . mysqli_error($conn);
         }
     }
-} else {
-    echo "Usuario no encontrado.";
-    exit();
 }
 ?>
 
@@ -59,7 +63,7 @@ if ($usuario = mysqli_fetch_assoc($result_usuario)) {
     <link rel="stylesheet" href="../Estilos/estiloinicio.css">
     <link rel="stylesheet" href="../public/app/publico/css/lib/datatables-net/datatables.min.css">
     <link rel="stylesheet" href="../public/app/publico/css/separate/vendor/datatables-net.min.css">
-    <title>Actualizar Información Personal</title>
+    <title>Crear Usuario</title>
     <style>
         body {
             color: white;
@@ -117,6 +121,10 @@ if ($usuario = mysqli_fetch_assoc($result_usuario)) {
 
         .alert.success {
             background-color: #4CAF50;
+        }
+
+        .alert.error {
+            background-color: #f44336;
         }
 
         .closebtn {
@@ -188,9 +196,9 @@ if ($usuario = mysqli_fetch_assoc($result_usuario)) {
         <main>
             <div class="header">
                 <div class="left">
-                    <h1>Informacion Personal</h1>
+                    <h1>Crear Usuario</h1>
                     <ul class="breadcrumb">
-                        <li><a href="#">Editar Información</a></li>
+                        <li><a href="#">Nuevo Usuario</a></li>
                     </ul>
                 </div>
             </div>
@@ -200,33 +208,66 @@ if ($usuario = mysqli_fetch_assoc($result_usuario)) {
                 <div class="orders">
                     <div class="header">
                         <i class='bx bx-receipt'></i>
-                        <h3>Datos Personales</h3>
+                        <h3>Datos del Usuario</h3>
                         <i class='bx bx-filter'></i>
                     </div>
-                    <?php if ($update_success): ?>
-        <p>Información actualizada con éxito.</p>
-    <?php endif; ?>
-
-    <form action="updateUser.php?id=<?php echo $editar_usuario_id; ?>" method="post">
-        <label for="id_empleado">ID Empleado:</label>
-        <input type="text" id="id_empleado" name="id_empleado" value="<?php echo htmlspecialchars($usuario['id_empleado']); ?>" readonly>
-        <br>
-        <label for="usuario">Usuario:</label>
-        <input type="text" id="usuario" name="usuario" value="<?php echo htmlspecialchars($usuario['usuario']); ?>" required>
-        <br>
-        <label for="tipo_empleado">Tipo de Empleado:</label>
-        <select id="tipo_empleado" name="tipo_empleado" required>
-            <option value="">Seleccione uno...</option>
-            <?php
-            $tipos = ['docente', 'limpieza', 'administrativo']; // Estos son los valores del enum en la base de datos
-            foreach ($tipos as $tipo) {
-                echo "<option value='$tipo'" . ($tipo == $usuario['tipo_empleado'] ? " selected" : "") . ">$tipo</option>";
-            }
-            ?>
-        </select>
-        <br>
-        <button type="submit">Actualizar Información</button>
-    </form>
+                    <?php if ($update_success) : ?>
+                        <div class="alert success">
+                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                            Usuario creado con éxito.
+                        </div>
+                    <?php elseif (!empty($error_message)) : ?>
+                        <div class="alert error">
+                            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+                            <?php echo htmlspecialchars($error_message); ?>
+                        </div>
+                    <?php endif; ?>
+                    <form action="crearUsuario.php" method="post">
+                        <div class="mb-3">
+                            <label for="id_empleado" class="form-label">ID Empleado</label>
+                            <input type="text" class="form-control" id="id_empleado" name="id_empleado" required pattern="\d{10}" title="Debe ser un número de 10 dígitos">
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="emple_nombre" name="emple_nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="emple_apellido" name="emple_apellido" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_direccion" class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="emple_direccion" name="emple_direccion" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emple_telefono" class="form-label">Teléfono</label>
+                            <input type="number" class="form-control" id="emple_telefono" name="emple_telefono" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="usuario" class="form-label">Usuario</label>
+                            <input type="text" class="form-control" id="usuario" name="usuario" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contrasenia" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="contrasenia" name="contrasenia" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tipo_empleado" class="form-label">Tipo de Empleado</label>
+                            <select class="form-control" id="tipo_empleado" name="tipo_empleado" required>
+                                <option value="docente">Docente</option>
+                                <option value="limpieza">Limpieza</option>
+                                <option value="administrativo">Administrativo</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rol" class="form-label">Rol</label>
+                            <select class="form-control" id="rol" name="rol" required>
+                                <option value="admin">Admin</option>
+                                <option value="empleado">Empleado</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                    </form>
                 </div>
             </div>
         </main>
@@ -268,8 +309,7 @@ if ($usuario = mysqli_fetch_assoc($result_usuario)) {
                         copy: "Copiar",
                         colvis: "Visibilidad"
                     }
-                }
-            });
+                });
         });
     </script>
 </body>
