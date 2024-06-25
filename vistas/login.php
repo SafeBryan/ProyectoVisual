@@ -15,33 +15,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
     $contrasenia = mysqli_real_escape_string($conn, $contrasenia);
 
     // Consultar el usuario en la base de datos
-    $sql = "SELECT u.usuario, u.id, u.rol, u.id_empleado, e.emple_nombre, e.emple_apellido 
+    $sql = "SELECT u.usuario, u.id, u.rol, u.id_empleado, u.contrasenia, e.emple_nombre, e.emple_apellido 
             FROM usuarios u
             JOIN empleados e ON u.id_empleado = e.id_empleado
-            WHERE u.usuario='$usuario' AND u.contrasenia='$contrasenia'";
+            WHERE u.usuario='$usuario'";
 
     $result = mysqli_query($conn, $sql);
 
     if (mysqli_num_rows($result) == 1) {
         // Usuario encontrado
         $row = mysqli_fetch_assoc($result);
-        $_SESSION['usuario'] = $usuario;
-        $_SESSION['usuario_id'] = $row['id'];
-        $_SESSION['rol'] = $row['rol'];
-        $_SESSION['id_empleado'] = $row['id_empleado'];
-        $_SESSION['nombre'] = $row['emple_nombre']; 
-        $_SESSION['apellido'] = $row['emple_apellido']; 
+        
+        // Verificar la contraseña
+        $contraseniaHashed = $row['contrasenia'];
+        if (password_verify($contrasenia, $contraseniaHashed) || $contrasenia === $contraseniaHashed) {
+            // La contraseña coincide
+            $_SESSION['usuario'] = $usuario;
+            $_SESSION['usuario_id'] = $row['id'];
+            $_SESSION['rol'] = $row['rol'];
+            $_SESSION['id_empleado'] = $row['id_empleado'];
+            $_SESSION['nombre'] = $row['emple_nombre']; 
+            $_SESSION['apellido'] = $row['emple_apellido']; 
 
-        // Redirigir según el rol del usuario
-        header("Location: inicio.php");
-        exit(); // Asegurar que no se ejecute más código después de la redirección
+            // Redirigir según el rol del usuario
+            header("Location: inicio.php");
+            exit(); // Asegurar que no se ejecute más código después de la redirección
+        } else {
+            echo "Usuario o contraseña incorrectos.";
+        }
     } else {
-        echo "Usuario o contraseña incorrectos.";
+        echo "Usuario no encontrado.";
     }
 
     mysqli_close($conn);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
